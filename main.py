@@ -134,7 +134,7 @@ async def start_job(request: StartJobRequest):
         # Create payment request via Masumi Payment Service
         async with httpx.AsyncClient(timeout=30.0) as client:
             payment_response = await client.post(
-                f"{PAYMENT_SERVICE_URL}/payments/create",
+                f"{PAYMENT_SERVICE_URL}/payment/",
                 json={
                     "agentIdentifier": AGENT_IDENTIFIER,
                     "sellerVKey": SELLER_VKEY,
@@ -146,7 +146,7 @@ async def start_job(request: StartJobRequest):
                     "inputData": [item.dict() for item in request.input_data]
                 },
                 headers={
-                    "Authorization": f"Bearer {PAYMENT_API_KEY}",
+                    "x-api-key": PAYMENT_API_KEY,
                     "Content-Type": "application/json"
                 }
             )
@@ -226,9 +226,13 @@ async def monitor_payment_and_execute(job_id: str, blockchain_identifier: str):
         try:
             # Check payment status
             async with httpx.AsyncClient(timeout=10.0) as client:
-                payment_status_response = await client.get(
-                    f"{PAYMENT_SERVICE_URL}/payments/{blockchain_identifier}/status",
-                    headers={"Authorization": f"Bearer {PAYMENT_API_KEY}"}
+                payment_status_response = await client.post(
+                    f"{PAYMENT_SERVICE_URL}/payment/resolve-blockchain-identifier",
+                    json={"blockchainIdentifier": blockchain_identifier},
+                    headers={
+                        "x-api-key": PAYMENT_API_KEY,
+                        "Content-Type": "application/json"
+                    }
                 )
                 
                 if payment_status_response.status_code != 200:
